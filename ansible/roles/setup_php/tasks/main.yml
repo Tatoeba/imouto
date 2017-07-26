@@ -1,8 +1,7 @@
 ---
-#Tasks for setting up php5
 
 - name: Install php5
-  apt: name={{ item }} update_cache=yes cache_valid_time=36000 state=present
+  apt: name={{ item }} update_cache=yes cache_valid_time=36000 state=latest
   with_items:
   - php5-fpm
   - php5-cli
@@ -13,32 +12,36 @@
   - php5-imagick
   - php5-mcrypt
   - memcached
+  when: "ansible_distribution_release == 'wheezy'"
 
 - name: Copy php configuration files
   copy: src=php.conf dest=/etc/php5/fpm/pool.d/tatoeba.conf
+  when: "ansible_distribution_release == 'wheezy'"
 
-- name: Restart nginx
-  service: name=nginx state=restarted enabled=yes
 - name: Restart php5-fpm
   service: name=php5-fpm state=restarted enabled=yes
+  when: "ansible_distribution_release == 'wheezy'"
 
 - name: Download composer
   get_url:
     url: https://getcomposer.org/installer
     dest: /tmp/installer
   tags: composer
+  when: "ansible_distribution_release == 'wheezy'"
 
 - name: Install composer
   shell: cat /tmp/installer | php -- --install-dir=/usr/local/bin
   args:
     creates: /usr/local/bin/composer
   tags: composer
+  when: "ansible_distribution_release == 'wheezy'"
 
 - name: Rename composer.phar to composer
   shell: mv /usr/local/bin/composer.phar /usr/local/bin/composer
   args:
     creates: /usr/local/bin/composer
   tags: composer
+  when: "ansible_distribution_release == 'wheezy'"
 
 - name: Make composer executable
   file:
@@ -46,3 +49,25 @@
     mode: a+x
     state: file
   tags: composer
+  when: "ansible_distribution_release == 'wheezy'"
+
+- name: Install php7
+  apt: name={{ item }} update_cache=yes cache_valid_time=36000 state=latest
+  with_items:
+  - php-fpm
+  - php-cli
+  - php-mysql
+  - php-intl
+  - php-curl
+  - php-memcache
+  - php-imagick
+  - php-mcrypt
+  - php-xml
+  - memcached
+  when: "ansible_distribution_release == 'stretch'"
+
+- name: Install Composer
+  apt:
+    name: composer
+    state: latest
+  when: "ansible_distribution_release == 'stretch'"
