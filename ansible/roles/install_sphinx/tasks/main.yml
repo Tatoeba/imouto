@@ -39,17 +39,25 @@
 - name: Install additional systemd.unit file
   copy:
     src: sphinxsearch.service
-    dest: /etc/systemd/systemd/sphinxsearch.service
+    dest: /etc/systemd/system/sphinxsearch.service
     owner: root
     group: root
     mode: 0644
-  notify: Reload demons
+  notify: Reload daemons unit files
   when: "ansible_distribution_release == 'stretch'"
 
 - name: Remove init.d file
   file:
     path: /etc/init.d/sphinxsearch
     state: absent
+  when: "ansible_distribution_release == 'stretch'"
+
+- name: Start and Enable sphinxsearch
+  service:
+    name: sphinxsearch
+    state: started
+    enabled: yes
+    daemon_reload: yes
   when: "ansible_distribution_release == 'stretch'"
 
 - name: Set the location of pid file in Sphinx's init.d script
