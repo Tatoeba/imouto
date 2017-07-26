@@ -1,24 +1,58 @@
 ---
-#Tasks for setting up nginx
 
 - name: Stop apache2 service if running
-  service: name=apache2 state=stopped enabled=no pattern=apache2
+  service:
+    name: apache2
+    state: stopped
+    enabled: no
+    pattern: apache2
   ignore_errors: yes
+
 - name: Install nginx
-  apt: name=nginx state=present
+  apt:
+    name: nginx
+    state: latest
 
 - name: Remove default nginx configurations
-  command: rm -rf /etc/nginx/sites-available /etc/nginx/sites-enabled
-- name: Create configuration directories
-  shell: mkdir -p /etc/nginx/sites-enabled; mkdir -p /etc/nginx/sites-available
-- name: Copy nginx configuration files - sites-available
-  template: src={{nginx_config_file}} dest=/etc/nginx/sites-available/tatoeba owner=www-data group=root mode=644 backup=yes
-- name: Copy nginx configuration files - sites-enabled
-  file: state=link force=yes src=/etc/nginx/sites-available/tatoeba dest=/etc/nginx/sites-enabled/tatoeba
+  file:
+    path: "/etc/nginx/{{item}}"
+    state: absent
+  with_items:
+    sites-available
+    sites-enabled
 
-- name: Restart nginx
-  service: name=nginx state=restarted enabled=yes
+- name: Create configuration directories
+  file:
+    path: "/etc/nginx/{{item}}"
+    state: directory
+    owner: root
+    group: root
+    mode: 755
+  with_items:
+    sites-available
+    sites-enabled
+
+- name: Copy tatoeba.org vhost file
+  template:
+    src: "{{nginx_config_file}}"
+    dest: /etc/nginx/sites-available/tatoeba
+    owner: www-data
+    group: root
+    mode: 644
+    backup: yes
+  notify: Restart nginx
+
+- name: Enable tatoeba.org vhost
+  file:
+    state: link
+    src: /etc/nginx/sites-available/tatoeba
+    dest: /etc/nginx/sites-enabled/tatoeba
+  notify: Restart nginx
+
 - name: Remove apache2 from init list
   command: update-rc.d -f apache2 remove
+  when: "ansible_distribution_release == 'wheezy'"
+
 - name: Set defaults in init script for nginx
   command: update-rc.d nginx defaults
+  when: "ansible_distribution_release == 'wheezy'"
