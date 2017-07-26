@@ -49,6 +49,3 @@
   - app/webroot/img/profiles_36
   - app/tmp/logs
   - app/tmp/cache
-
-- name: Restart php5-fpm
-  service: name=php5-fpm state=restarted enabled=yes
