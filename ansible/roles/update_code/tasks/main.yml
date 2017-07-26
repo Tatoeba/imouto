@@ -3,19 +3,24 @@
 
 - name: Fetch the code from github repository
   git:
-    repo={{git_rep}}
-    dest={{code_dir}}
-    version={{repo_version}}
-    remote={{git_remote}}
+    repo: "{{git_rep}}"
+    dest: "{{code_dir}}"
+    version: "{{repo_version}}"
+    remote: "{{git_remote}}"
 
 - name: Copy CakePHP config files from remote host
-  fetch: src={{code_dir}}/app/Config/{{item}}.template dest=roles/update_code/templates/{{item}}.template flat=yes
+  fetch:
+    src: "{{code_dir}}/app/Config/{{item}}.template"
+    dest: "roles/update_code/templates/{{item}}.template"
+    flat: yes
   with_items:
   - database.php
   - core.php
 
 - name: Template out CakePHP config files
-  template: src={{item}}.template dest={{code_dir}}/app/Config/{{item}}
+  template:
+    src: "{{item}}.template"
+    dest: "{{code_dir}}/app/Config/{{item}}"
   with_items:
   - database.php
   - core.php
@@ -24,10 +29,21 @@
   shell: composer install chdir={{code_dir}}
 
 - name: Set ownership of the repository
-  file: path={{code_dir}} state=directory recurse=yes owner={{ansible_ssh_user}} group={{ansible_ssh_user}}
+  file:
+    path: "{{code_dir}}"
+    state: directory
+    recurse: yes
+    owner: "{{ansible_ssh_user}}"
+    group: "{{ansible_ssh_user}}"
+  when: "deploy_env != 'production'"
 
 - name: Give proper permissions to avatar, logs and cache directories
-  file: path={{code_dir}}/{{item}} state=directory recurse=yes owner=www-data group=www-data
+  file:
+    path: "{{code_dir}}/{{item}}"
+    state: directory
+    recurse: yes
+    owner: www-data
+    group: www-data
   with_items:
   - app/webroot/img/profiles_128
   - app/webroot/img/profiles_36
