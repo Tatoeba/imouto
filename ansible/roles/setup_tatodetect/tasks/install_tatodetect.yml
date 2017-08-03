@@ -10,7 +10,7 @@
 - name: Install dependencies for cppcms
   apt:
     name: "{{item}}"
-    state: present
+    state: latest
   with_items:
   - make
   - cmake
@@ -75,7 +75,7 @@
 - name: Install dependencies for tatodetect
   apt:
     name: libsqlite3-dev
-    state: present
+    state: latest
 
 - name: Fetch tatodetect source
   git:

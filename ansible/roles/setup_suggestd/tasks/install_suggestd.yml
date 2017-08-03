@@ -7,7 +7,7 @@
 - name: Install dependencies for suggestd
   apt:
     name: "{{item}}"
-    state: present
+    state: latest
   with_items:
   - gcc
   - automake
