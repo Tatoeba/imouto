@@ -105,8 +105,8 @@
 
 - name: Copy config file to system-wide location
   template:
-    src: tatodetect.js.j2
-    dest: /etc/tatodetect.js
+    src: tatodetect.json.j2
+    dest: /etc/tatodetect.json
     mode: 555
 
 - name: Copy default options file to system-wide location
