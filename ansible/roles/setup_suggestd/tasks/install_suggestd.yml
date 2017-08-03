@@ -17,6 +17,23 @@
   - libexpat1-dev
   - pkg-config
   - libmysqlclient-dev
+  when: "ansible_distribution_release == 'wheezy'"
+
+- name: Install dependencies for suggestd
+  apt:
+    name: "{{item}}"
+    state: latest
+  with_items:
+  - gcc
+  - automake
+  - make
+  - libevent-dev
+  - libsqlite3-dev
+  - libexpat1-dev
+  - pkg-config
+  - libmysqlclient-dev
+  - default-libmysqlclient-dev
+  when: "ansible_distribution_release == 'stretch'"
 
 - name: Fetch suggestd source
   git:
