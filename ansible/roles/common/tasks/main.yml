@@ -2,4 +2,7 @@
 # Tasks specyfing commom tasks for all servers
 
 - name: Ensure git is installed
-  apt: name=git state=latest force=yes
+  apt:
+    name: git
+    state: latest
+    force: yes
