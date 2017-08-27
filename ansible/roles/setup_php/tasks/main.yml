@@ -11,6 +11,7 @@
   - php5-memcache
   - php5-imagick
   - php5-mcrypt
+  - php5-mbstring
   - memcached
   when: "ansible_distribution_release == 'wheezy'"
 
@@ -63,6 +64,7 @@
   - php-imagick
   - php-mcrypt
   - php-xml
+  - php7.0-mbstring
   - memcached
   when: "ansible_distribution_release == 'stretch'"
 
