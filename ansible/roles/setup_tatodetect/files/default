@@ -1,1 +1,1 @@
-DAEMON_OPTS=" -c /etc/tatodetect.js"
+DAEMON_OPTS=" -c /etc/tatodetect.json"
