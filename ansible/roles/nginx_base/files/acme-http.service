@@ -1,0 +1,10 @@
+[Unit]
+Description=HTTP Server for acme client
+
+[Service]
+WorkingDirectory=/srv/letsencrypt
+ExecStart=/usr/bin/python3 -m http.server 80
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
