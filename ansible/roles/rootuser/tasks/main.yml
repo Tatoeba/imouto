@@ -2,16 +2,16 @@
 
 - name: 'User {{ user }}'
   user:
-    name: '{{ user }}'
+    name: '{{ user }}R'
     state: present
     comment: '{{ comment | default("") }}'
     create_home: yes
-    home: '/root/{{ user }}'
+    home: '/root/{{ user }}R'
     non_unique: yes
     uid: 0
 
 - name: 'Sshkey {{ user }}'
   authorized_key:
-    user: '{{ user }}'
+    user: '{{ user }}R'
     state: present
     key: '{{ key }}'
