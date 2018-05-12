@@ -8,6 +8,12 @@
   roles:
   - {
       role: rootuser,
+      user: '{{ trang.user }}',
+      comment: '{{ trang.comment }}',
+      key: '{{ trang.key }}',
+    }
+  - {
+      role: rootuser,
       user: '{{ ppjet.user }}',
       comment: '{{ ppjet.comment }}',
       key: '{{ ppjet.key }}',
