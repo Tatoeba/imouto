@@ -1,0 +1,17 @@
+---
+
+- name: 'User {{ user }}'
+  user:
+    name: '{{ user }}'
+    state: present
+    comment: '{{ comment | default("") }}'
+    create_home: yes
+    home: '/root/{{ user }}'
+    non_unique: yes
+    uid: 0
+
+- name: 'Sshkey {{ user }}'
+  authorized_key:
+    user: '{{ user }}'
+    state: present
+    key: '{{ key }}'
