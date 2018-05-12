@@ -1,0 +1,193 @@
+# vim: set ts=4 sts=4 sw=4 et:
+
+server {
+    listen {{ vhost_port }}{% if tls_enabled %} ssl http2{% endif %};
+    listen [::]:{{ vhost_port }}{% if tls_enabled %} ssl http2{% endif %};
+    server_name m.{{ main_vhost_name}};
+
+    {% if tls_enabled -%}
+    include "/etc/nginx/ssl.conf";
+    {%- endif %}
+
+    return 301 $scheme://tatoeba.org$request_uri;
+}
+
+limit_req_zone $binary_remote_addr zone=one:10m rate=1r/s;
+
+server {
+    listen {{ vhost_port }}{% if tls_enabled %} ssl http2{% endif %};
+    listen [::]:{{ vhost_port }}{% if tls_enabled %} ssl http2{% endif %};
+    {% if environment == "local" -%}
+    server_name {{ main_vhost_name }}
+    {% elif environment == "dev" -%}
+    server_name dev.{{ main_vhost_name }}
+    {% else -%}
+    server_name www.{{ main_vhost_name }} {{ main_vhost_name }};
+    {%- endif %}
+
+    keepalive_timeout 60;
+
+    {% if tls_enabled -%}
+    include "/etc/nginx/ssl.conf";
+    {%- endif %}
+    include "/etc/nginx/letsencrypt.conf";
+
+    root /srv/tatoeba.org/www/webroot;
+    index index.php index.html;
+    charset utf-8;
+
+    access_log /srv/tatoeba.org/log/access.log;
+    error_log /srv/tatoeba.org/log/error.log info;
+
+    rewrite_log on;
+
+    error_page 502 503 504 /50x.html;
+    location = /50x.html {
+        try_files $uri $uri/ /50x.html;
+    }
+
+    location / {
+        limit_req zone=one burst=10;
+        if (-f $document_root/../../maintenance.mode) {
+            return 503;
+        }
+        try_files $uri $uri/ /index.php?$args;
+    }
+
+    location ~ /files/downloads/ {
+        autoindex on;
+    }
+
+    location ~ \.php {
+        try_files $uri =404;
+        include /etc/nginx/fastcgi_params;
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_pass unix:/var/run/php/tatoeba.sock;
+        fastcgi_intercept_errors on;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        # wait a bit more, to have a higher chance to get a page under heavy load
+        fastcgi_read_timeout 180;
+    }
+
+    # Comment this out when the subdomain for static files is activated
+    location ~ /(img|js|css)/ {
+        try_files /$uri =404;
+        expires max;
+    }
+
+    location ~ ^/(robots\.txt|sitemap\.txt|opensearch.xml|favicon\.ico)$ {
+        try_files /$uri =404;
+    }
+
+    location ~ /(\.ht|\.svn) {
+        deny all;
+    }
+}
+
+server {
+    listen {{ vhost_port }}{% if tls_enabled %} ssl http2{% endif %};
+    listen [::]:{{ vhost_port }}{% if tls_enabled %} ssl http2{% endif %};
+    server_name audio.{{ main_vhost_name }};
+
+    {% if tls_enabled -%}
+    include "/etc/nginx/ssl.conf";
+    {%- endif %}
+    include "/etc/nginx/letsencrypt.conf";
+
+    root /srv/audio.tatoeba.org/www;
+    index index.php index.html;
+    charset utf-8;
+
+    access_log /srv/audio.tatoeba.org/log/access.log;
+    error_log /srv/audio.tatoeba.org/log/error.log;
+    rewrite_log on;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location ~ /(\.ht|\.svn) {
+        deny all;
+    }
+}
+
+server {
+    listen {{ vhost_port }}{% if tls_enabled %} ssl http2{% endif %};
+    listen [::]:{{ vhost_port }}{% if tls_enabled %} ssl http2{% endif %};
+    server_name downloads.{{ main_vhost_name }};
+
+    {% if tls_enabled -%}
+    include "/etc/nginx/ssl.conf";
+    {%- endif %}
+    include "/etc/nginx/letsencrypt.conf";
+
+    root /srv/downloads.tatoeba.org/www;
+    index index.php index.html;
+    charset utf-8;
+
+    access_log /srv/downloads.tatoeba.org/log/access.log;
+    error_log /srv/downloads.tatoeba.org/log/error.log;
+    rewrite_log on;
+
+    location / {
+        autoindex on;
+    }
+}
+
+server {
+    listen {{ vhost_port }}{% if tls_enabled %} ssl http2{% endif %};
+    listen [::]:{{ vhost_port }}{% if tls_enabled %} ssl http2{% endif %};
+    keepalive_timeout 60;
+    server_name static.{{ main_vhost_name }};
+
+    {% if tls_enabled -%}
+    include "/etc/nginx/ssl.conf";
+    {%- endif %}
+    include "/etc/nginx/letsencrypt.conf";
+
+    root /srv/static.tatoeba.org/www;
+    index index.php index.html;
+    charset utf-8;
+
+    access_log /srv/static.tatoeba.org/log/access.log;
+    error_log /srv/static.tatoeba.org/log/error.log;
+    rewrite_log on;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location ~ /(\.ht|\.svn) {
+        deny all;
+    }
+}
+
+server {
+    listen {{ vhost_port }}{% if tls_enabled %} ssl http2{% endif %};
+    listen [::]:{{ vhost_port }}{% if tls_enabled %} ssl http2{% endif %};
+    server_name xcache.{{ main_vhost_name }};
+
+    {% if tls_enabled -%}
+    include "/etc/nginx/ssl.conf";
+    {%- endif %}
+    include "/etc/nginx/letsencrypt.conf";
+
+    root /srv/xcache.tatoeba.org/www;
+    index index.php index.html;
+    charset utf-8;
+
+    access_log /srv/xcache.tatoeba.org/log/access.log;
+    error_log /srv/xcache.tatoeba.org/log/error.log;
+    rewrite_log on;
+
+    location ~ \.php$ {
+        try_files $uri =404;
+        include /etc/nginx/fastcgi_params;
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_pass unix:/var/run/php/tatoeba.sock;
+        fastcgi_intercept_errors on;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+}

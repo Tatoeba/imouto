@@ -1,0 +1,28 @@
+---
+
+- name: Copy Tatoeba vhost
+  template:
+    src: tatoeba.org.conf.j2
+    dest: /etc/nginx/sites-available/tatoeba.org.conf
+    owner: root
+    group: root
+    mode: 0640
+    backup: yes
+
+- file:
+    path: "/srv/{{ item[0] }}/{{ item[1] }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+  with_nested:
+    - [tatoeba.org, audio.tatoeba.org, downloads.tatoeba.org, static.tatoeba.org, xcache.tatoeba.org]
+    - [log, www]
+
+- name: Enable Tatoeba vhost
+  file:
+    state: link
+    force: yes
+    src: /etc/nginx/sites-available/tatoeba.org.conf
+    dest: /etc/nginx/sites-enabled/tatoeba.org.conf
+  notify: reload nginx

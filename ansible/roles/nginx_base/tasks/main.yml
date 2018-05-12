@@ -1,0 +1,198 @@
+---
+
+# Install nginx.
+
+- name: Purge apache2
+  apt:
+    name: apache2
+    purge: yes
+  ignore_errors: yes
+
+- name: Mask nginx
+  systemd:
+    name: nginx
+    masked: yes
+  changed_when: False
+
+- name: Install nginx
+  apt:
+    name: nginx
+    state: latest
+
+- name: Unmask nginx
+  systemd:
+    name: nginx
+    masked: no
+  changed_when: False
+
+- name: Copy necessary files
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: 0640
+  with_items:
+    - { src: acme-http.service, dest: /etc/systemd/system/acme-http.service }
+    - { src: letsencrypt.conf, dest: /etc/nginx/letsencrypt.conf }
+    - { src: 090-default.conf, dest: /etc/nginx/sites-available/090-default.conf }
+    - { src: 090-default-ssl.conf, dest: /etc/nginx/sites-available/090-default-ssl.conf }
+    - { src: le-chain.pem, dest: /etc/letsencrypt/le-chain.pem}
+
+- name: Copy necessary templates
+  template:
+    src: ssl.conf.j2
+    dest: /etc/nginx/ssl.conf
+    owner: root
+    group: root
+    mode: 0640
+    backup: yes
+
+- name: Copy acme_tiny
+  copy:
+    src: acme_tiny.py
+    dest: /usr/local/bin/acme_tiny
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Create ssl group
+  group:
+    name: ssl
+    system: yes
+
+- name: Create necessary folders
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: ssl
+    mode: u+rwX,g+rX
+    recurse: yes
+  with_items:
+    - /etc/letsencrypt
+    - /srv/letsencrypt/.well-known/acme-challenge
+
+- name: Install PyOpenSSL for openssl module
+  package:
+    name: python-openssl
+    state: latest
+
+# If no certificate is available yet, nginx will refuse to start if it sees
+# vhost requiring to be served on tls. Start python -m http.server on 80, but
+# ignore any error, (as nginx can also serve the LE folder), and continue with
+# generating the certificate.
+
+- name: Start acme-http server
+  systemd:
+    name: acme-http
+    state: started
+    daemon_reload: yes
+  ignore_errors: yes
+
+# Request or renew certificate if necessary
+
+- name: Generate account key
+  command: openssl genrsa -out account.key 4096
+  args:
+    chdir: /etc/letsencrypt
+    creates: /etc/letsencrypt/account.key
+
+- name: Generate private key
+  command: openssl genrsa -out "{{ ansible_fqdn }}.key" 4096
+  args:
+    chdir: /etc/letsencrypt
+    creates: "/etc/letsencrypt/{{ ansible_fqdn }}.key"
+
+- name: Generate openssl.cnf
+  template:
+    src: openssl.cnf.j2
+    dest: /etc/letsencrypt/openssl.cnf
+    owner: root
+    group: ssl
+    mode: 0640
+  register: opensslcnf
+
+- stat:
+    path: "/etc/letsencrypt/{{ ansible_fqdn }}.crt"
+  register: cert_file
+
+- openssl_certificate:
+    path: "/etc/letsencrypt/{{ ansible_fqdn }}.crt"
+    provider: assertonly
+    valid_in: "{{ 30 * 24 * 3600 }}"
+  register: cert_expired
+  when: cert_file.stat.exists
+  ignore_errors: yes
+
+- set_fact:
+    cert_exists: "{{ cert_file.stat.exists }}"
+    cert_expired: "{{ cert_expired | failed }}"
+    domains_changed: "{{ opensslcnf | changed }}"
+
+- set_fact:
+    request_cert: "{{ not cert_exists or cert_expired or domains_changed }}"
+
+- name: Generate CSR
+  shell: openssl req -new -sha256 -key "{{ ansible_fqdn }}".key -subj "/" -reqexts SAN -config openssl.cnf > "{{ ansible_fqdn }}.csr"
+  args:
+    chdir: /etc/letsencrypt
+  when: request_cert
+
+- name: Request certificate
+  shell: acme_tiny --account-key ./account.key --csr "./{{ ansible_fqdn }}.csr" --acme-dir /srv/letsencrypt/.well-known/acme-challenge > "{{ ansible_fqdn }}.crt"
+  args:
+    chdir: /etc/letsencrypt
+  when: request_cert
+
+# - name: Create fullchain file
+#   file:
+#     dest: "/etc/letsencrypt/{{ ansible_fqdn }}.full.crt"
+#     content: "{{ lookup('file', '/etc/letsencrypt/' + ansible_fqdn + '.crt') + lookup('file', '/etc/letsencrypt/le-chain.pem') }}"
+#     owner: root
+#     group: ssl
+#     mode: 0640
+#   when: request_cert
+
+- name: Create dhparam
+  command: openssl dhparam -out "/etc/nginx/{{ ansible_fqdn }}.dh.pem" 4096
+  args:
+    creates: "/etc/nginx/{{ ansible_fqdn }}.dh.pem"
+
+# Setup default vhosts
+
+- name: Create configuration directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+  with_items:
+    - /etc/nginx/sites-available
+    - /etc/nginx/sites-enabled
+
+- name: Enable default vhosts
+  file:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    state: link
+  with_items:
+    - { src: /etc/nginx/sites-available/090-default.conf, dest: /etc/nginx/sites-enabled/090-default.conf }
+    - { src: /etc/nginx/sites-available/090-default-ssl.conf, dest: /etc/nginx/sites-enabled/090-default-ssl.conf }
+  notify: reload nginx
+
+# Desired state
+
+- name: Stop acme-http server
+  service:
+    name: acme-http
+    state: stopped
+    enabled: no
+  ignore_errors: yes
+
+- name: Start/Enable nginx
+  service:
+    name: nginx
+    state: started
+    enabled: yes
