@@ -30,3 +30,9 @@
       comment: '{{ linkmauve.comment }}',
       key: '{{ linkmauve.key }}',
     }
+  - {
+      role: rootuser,
+      user: '{{ gillux.user }}',
+      comment: '{{ gillux.comment }}',
+      key: '{{ gillux.key }}',
+    }
