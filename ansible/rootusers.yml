@@ -1,10 +1,32 @@
 ---
 
+# Users are the same on all machines atm, but we could split them by having
+# another block of roles, with different host groups
 - hosts: all
+  vars_files:
+    - vars/rootusers.yml
   roles:
   - {
       role: rootuser,
-      user: ppjetR,
-      comment: "Maxime Buquet",
-      key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDCqrSdIOe0kiK6Ni7nwMFpE3WYjCorhB0OmNn8yRMtZ1/NhQTzt3yNwGoXTvu3OO9YYXbrtP80eimJ6kUHm2E64l4BWi6q905SlBdn49Ee7OKSRxA5iHzv1P+sLwH6puBsRkQl86g4lEwQW4RUA8ocPvOdaw0Hv2XNq8mt20YG/l+GUzs5xxXCR/XurjIMKhXv9CD2aA38A5Q4ehuvd7qfauuTpnAii5W/t/44vkZU01aeMlz4qg1Ps+BhupiH3duZBdnqS+SU3wxcWYOptgwQjo8LDj2hfstTq57hgE/uMrrIBB/5x5P0sV3X8m3kuf/IPUeQ74jy5WO9Et4C7WEes2oLlkiIFcniioFcJqmXmI5lm4JZJ6Nw562WFz29h+1CtM3mH6BgJn2Y0ISkyGQ2z9z3QQf4FoR4X5iqXiIwScIzZvCd7gkubXTJtF7V4JPgNZWvGdLVNhXZiOWmEMOkJqWWRftsBXkmqxLQzrp7Mh3aA2VdKcA8fP+sNtrp89kFWs8hflrDGw00+WAzp3DErGf8RQwNaZyl1P6lu5Fjgf7t6Pc6t/yV/6u6K1D04lG1SMhqLXbJx7uOWRBDTktPE26/+zMvfwAmv+c2gcuhkcHgYrCyls5YRrDwX8qohAuiTAWSM+IVkZBvYf04ofNCPDD8tiOuAjzxVNCuvhN5SQ=="
+      user: '{{ ppjet.user }}',
+      comment: '{{ ppjet.comment }}',
+      key: '{{ ppjet.key }}',
+    }
+  - {
+      role: rootuser,
+      user: '{{ lool0.user }}',
+      comment: '{{ lool0.comment }}',
+      key: '{{ lool0.key }}',
+    }
+  - {
+      role: rootuser,
+      user: '{{ liori.user }}',
+      comment: '{{ liori.comment }}',
+      key: '{{ liori.key }}',
+    }
+  - {
+      role: rootuser,
+      user: '{{ linkmauve.user }}',
+      comment: '{{ linkmauve.comment }}',
+      key: '{{ linkmauve.key }}',
     }
