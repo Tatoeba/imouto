@@ -31,7 +31,7 @@ cd imouto
    v.memory = 1024 # only allocate 1GB of RAM to the VM
 ```
 
--Next please check that the ```fstab``` file exists under ```/etc```. If not, please run the following command:
+- If you are using a Mac, please check that the ```fstab``` file exists under ```/etc```. If not, please run the following command:
 
 ```bash
 sudo touch /etc/fstab
